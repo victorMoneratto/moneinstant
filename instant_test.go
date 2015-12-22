@@ -1,57 +1,51 @@
 package moneinstant
 
 import "testing"
+import "github.com/victormoneratto/moneinstant/Godeps/_workspace/src/github.com/stretchr/testify/assert"
+import "math/rand"
 
-func TestNewHomePage(t *testing.T) {
-	page, err := NewHomePage()
-	if err != nil {
-		t.Error(err)
+func TestInstants(t *testing.T) {
+	myInstants := MyInstants{}
+
+	// pages know to be valid
+	validPages := []*InstantsPage{
+		myInstants.Home(),
+		myInstants.Trending(),
+		myInstants.Recent(),
+		myInstants.Query("ceccon")}
+
+	for _, page := range validPages {
+		// test First
+		first, err := page.First()
+		assert.NoError(t, err, "error on First()")
+		assert.NotNil(t, first, "First() returns nil")
+
+		// test At (random)
+		index := rand.Intn(page.NumSelected())
+		randInstant, err := page.At(index)
+		assert.NoError(t, err, "error on At()")
+		assert.NotNil(t, randInstant, "At() returns nil")
+
+		// test All
+		instants, err := page.All()
+		assert.NoError(t, err, "error on All()")
+		assert.NotEmpty(t, instants, "no instants found")
+		assert.Equal(t, instants[0], first, "instants[0] and first are different")
 	}
 
-	if len(selectInstants(page.Document).Nodes) == 0 {
-		t.Error("Home page has no supported instants")
-	}
-}
+	var invalidPage *InstantsPage
+	// test invalid First
+	first, err := invalidPage.First()
+	assert.Error(t, err, "no error for invalid page")
+	assert.Nil(t, first, "invalid first should be nil")
 
-func TestNewInstantPage(t *testing.T) {
-	page, err := NewInstantPage("carlos")
-	if err != nil {
-		t.Error(err)
-	}
+	// test invalid At
+	at0, err := invalidPage.At(0)
+	assert.Error(t, err, "no error for invalid page")
+	assert.Nil(t, at0, "invalid At(0) should be nil")
 
-	if len(selectInstants(page.Document).Nodes) == 0 {
-		t.Error("Query page has no supported instants")
-	}
-}
-
-func TestGetRandomInstant(t *testing.T) {
-	page, err := NewInstantPage("carlos")
-	if err != nil {
-		t.Error(err)
-	}
-
-	instant, err := page.GetRandomInstant()
-	if err != nil {
-		t.Error(err)
-	}
-
-	if instant.URL == "" {
-		t.Error("URL is empty")
-	}
-}
-
-func TestGetAllInstants(t *testing.T) {
-	page, err := NewInstantPage("carlos")
-	if err != nil {
-		t.Error(err)
-	}
-
-	instants, err := page.GetAllInstants()
-	if err != nil {
-		t.Error(err)
-	}
-
-	if len(instants) == 0 {
-		t.Error("no supported instants found")
-	}
+	// test invalid All
+	all, err := invalidPage.All()
+	assert.Error(t, err, "no error for invalid page")
+	assert.Empty(t, all, "invalid All() should be empty")
 }
